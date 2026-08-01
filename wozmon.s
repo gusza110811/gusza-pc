@@ -1,3 +1,7 @@
+    org $c000
+
+    ; BASIC here
+
     org $f000
 
 XAML  = $24                            ; Last "opened" location Low
