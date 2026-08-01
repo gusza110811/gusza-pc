@@ -1,4 +1,6 @@
 *.bin
+*.img
+*.out
 *.obj
 *.hex
 *.woz

@@ -20,6 +20,14 @@ address_mask = 0x0003
 ocrcrlf = true
 
 [[region]]
+type = "nvram"
+file = "nvram0.img"
+size = 0x2000
+match = 0xA000
+match_mask = 0xE000
+address_mask = 0x1FFF
+
+[[region]]
 type = "ram"
 size = 0x8000
 match = 0x0000

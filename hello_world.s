@@ -1,4 +1,4 @@
-    org $0300
+    org $A000
 
 reset = $f000
 echo = $ff00
