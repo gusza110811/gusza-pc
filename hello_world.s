@@ -1,7 +1,7 @@
     org $A000
 
 reset = $f000
-echo = $ff00
+vec_echo = $ff02
 
 main:
     ldx #$00
@@ -15,11 +15,8 @@ loop:
 
     jmp reset
 
+echo:
+    jmp (vec_echo)
 
 hello:
-    byte $0D
-    byte $0A
-    text "Hello, World!"
-    byte $0D
-    byte $0A
-    byte $00
+    byte $0D, $0A, "Hello, World!", $0D, $0A, $00

@@ -1,8 +1,13 @@
-    org $c000
+    .org $c000
 
     ; BASIC here
 
-    org $f000
+    .include "basic.s"
+
+IRQ_vec = VEC_SV+2
+NMI_vec = IRQ_vec+3
+
+    .org $f000
 
 XAML  = $24                            ; Last "opened" location Low
 XAMH  = $25                            ; Last "opened" location High
@@ -42,7 +47,7 @@ ESCAPE:
 GETLINE:
     LDA     #$0D           ; Send CR
     JSR     ECHO
-    LDA     #$08           ; Send LF
+    LDA     #$0A           ; Send LF
     JSR     ECHO
 
     LDY     #$01           ; Initialize text index.
@@ -141,7 +146,7 @@ NXTPRNT:
     BNE     PRDATA         ; NE means no address to print.
     LDA     #$0D           ; CR.
     JSR     ECHO           ; Output it.
-    LDA     #$08           ; LF.
+    LDA     #$0A           ; LF.
     JSR     ECHO           ; Output it.
     LDA     XAMH           ; 'Examine index' high-order byte.
     JSR     PRBYTE         ; Output it in hex format.
@@ -192,16 +197,53 @@ ECHO:
     RTS                    ; Return.
 
 INPUT:
-    LDA     ACIA_DATA      ; Load character
+    LDA     ACIA_STATUS
+    AND     #$08            ; Key ready?
+    BEQ INPUT_NOT_READY
+    LDA     ACIA_DATA       ; Load character
+    SEC
+    RTS
+INPUT_NOT_READY:
+    CLC
     RTS
 
-JUMP_TABLE:
-    org $FF00
-    JMP ECHO                ; $FF00
-    JMP INPUT               ; $FF03
 
-    org $FFFA
+NONE:
+    RTS
 
-    word   RESET          ; NMI vector
-    word   RESET          ; RESET vector
-    word   $0000          ; IRQ vector
+BASIC:
+    LDY #END-VECTOR   ; set index/count
+COPY:
+    LDA VECTOR-1,Y     ; get byte from interrupt code
+    STA VEC_IN-1,Y      ; save to RAM
+    DEY                 ; decrement index/count
+    BNE COPY            ; loop if more to do
+
+    JMP LAB_COLD
+
+IRQ_HANDLER:
+    RTI
+
+NMI_HANDLER:
+    RTI
+
+
+
+    .org $FF00
+VECTOR:
+    .word INPUT                   ; $FF00
+    .word ECHO                    ; $FF02
+    .word NONE                    ; $FF04
+    .word NONE                    ; $FF06
+TABLE:
+    JMP IRQ_HANDLER         ; $FF08
+    JMP NMI_HANDLER         ; $FF0B
+END:
+    JMP BASIC               ; $FF0E
+
+
+    .org $FFFA
+
+    word   NMI_vec          ; NMI vector
+    word   RESET            ; RESET vector
+    word   IRQ_vec          ; IRQ vector
