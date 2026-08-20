@@ -1,10 +1,18 @@
     .org $c000
 
-    ; BASIC here
+BASIC_INIT:
+    LDY #END-VECTOR   ; set index/count
+COPY:
+    LDA VECTOR-1,Y     ; get byte from interrupt code
+    STA VEC_IN-1,Y      ; save to RAM
+    DEY                 ; decrement index/count
+    BNE COPY            ; loop if more to do
+
+    JMP LAB_COLD
 
     .include "basic.s"
 
-IRQ_vec = VEC_SV+2
+IRQ_vec = VEC_SV+(TABLE-VECTOR)
 NMI_vec = IRQ_vec+3
 
     .org $f000
@@ -26,6 +34,14 @@ ACIA_CMD    = $9002
 ACIA_CTRL   = $9003
 
 RESET:
+    LDX #$08
+
+BANK_INIT_LOOP:
+    STA $0300,X
+    INA
+    INX
+    BNE BANK_INIT_LOOP
+
     LDA     #$1F           ; 8-N-1, 19200 baud.
     STA     ACIA_CTRL
     LDA     #$0B           ; No parity, no echo, no interrupts.
@@ -211,16 +227,6 @@ INPUT_NOT_READY:
 NONE:
     RTS
 
-BASIC:
-    LDY #END-VECTOR   ; set index/count
-COPY:
-    LDA VECTOR-1,Y     ; get byte from interrupt code
-    STA VEC_IN-1,Y      ; save to RAM
-    DEY                 ; decrement index/count
-    BNE COPY            ; loop if more to do
-
-    JMP LAB_COLD
-
 IRQ_HANDLER:
     RTI
 
@@ -235,11 +241,12 @@ VECTOR:
     .word ECHO                    ; $FF02
     .word NONE                    ; $FF04
     .word NONE                    ; $FF06
+
+    .org $FF80
 TABLE:
-    JMP IRQ_HANDLER         ; $FF08
-    JMP NMI_HANDLER         ; $FF0B
+    JMP IRQ_HANDLER         ; $FF80
+    JMP NMI_HANDLER         ; $FF83
 END:
-    JMP BASIC               ; $FF0E
 
 
     .org $FFFA
