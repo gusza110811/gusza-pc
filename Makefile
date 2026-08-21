@@ -1,4 +1,4 @@
-.PHONY: core all run
+.PHONY: core demos all run
 
 rom.bin: wozmon.s basic.s
 	vasm6502_oldstyle wozmon.s -o rom.bin -Fbin -wdc02 -dotdir
@@ -9,7 +9,9 @@ hello_world.woz: hello_world.s
 
 core: rom.bin
 
-all: core hello_world.woz
+demos: hello_world.woz
+
+all: core demos
 
 run: all
 	toml-6502

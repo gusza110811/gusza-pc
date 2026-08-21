@@ -13,6 +13,14 @@ match_mask = 0xC000
 address_mask = 0x3FFF
 
 [[region]]
+type = "ram"
+size = 0x0100
+match = 0x8000
+match_mask = 0xF000
+address_mask = 0x00FF
+name = "page_table"
+
+[[region]]
 type = "acia"
 match = 0x9000
 match_mask = 0xF000
@@ -29,22 +37,14 @@ address_mask = 0x1FFF
 
 [[region]]
 type = "ram"
-size = 0x0400
-match = 0x0000
-match_mask = 0xFC00
-address_mask = 0x03FF
-name = "static_mem"
-
-[[region]]
-type = "ram"
-size = 0x7C00
+size = 0x8000
 match = 0x0000
 match_mask = 0x8000
 address_mask = 0x7FFF
-offset = -1024
 
 banked = true
-window_id_length = 8 # bits
+window_id_unused = 1 # 1 bit skipped
+window_id_length = 8 # bits, including unused
 bank_id_length = 2 # bytes
-control_area = "static_mem"
-control_area_offset = 0x308
+control_area = "page_table"
+control_area_offset = 0

@@ -8,8 +8,6 @@ COPY:
     DEY                 ; decrement index/count
     BNE COPY            ; loop if more to do
 
-    JMP LAB_COLD
-
     .include "basic.s"
 
 IRQ_vec = VEC_SV+(TABLE-VECTOR)
@@ -34,11 +32,12 @@ ACIA_CMD    = $9002
 ACIA_CTRL   = $9003
 
 RESET:
-    LDX #$08
+    LDX #$00
 
 BANK_INIT_LOOP:
-    STA $0300,X
+    STA $8000,X
     INA
+    INX
     INX
     BNE BANK_INIT_LOOP
 
