@@ -1,20 +1,3 @@
-    .org $c000
-
-BASIC_INIT:
-    LDY #END-VECTOR   ; set index/count
-COPY:
-    LDA VECTOR-1,Y     ; get byte from interrupt code
-    STA VEC_IN-1,Y      ; save to RAM
-    DEY                 ; decrement index/count
-    BNE COPY            ; loop if more to do
-
-    .include "basic.s"
-
-IRQ_vec = VEC_SV+(TABLE-VECTOR)
-NMI_vec = IRQ_vec+3
-
-    .org $f000
-
 XAML  = $24                            ; Last "opened" location Low
 XAMH  = $25                            ; Last "opened" location High
 STL   = $26                            ; Store address Low
@@ -25,27 +8,6 @@ YSAV  = $2A                            ; Used to see if hex value is given
 MODE  = $2B                            ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
 
 IN    = $0200                          ; Input buffer
-
-ACIA_DATA   = $9000
-ACIA_STATUS = $9001
-ACIA_CMD    = $9002
-ACIA_CTRL   = $9003
-
-RESET:
-    LDX #$00
-
-BANK_INIT_LOOP:
-    STA $8000,X
-    INA
-    INX
-    INX
-    BNE BANK_INIT_LOOP
-
-    LDA     #$1F           ; 8-N-1, 19200 baud.
-    STA     ACIA_CTRL
-    LDA     #$0B           ; No parity, no echo, no interrupts.
-    STA     ACIA_CMD
-    LDA     #$1B           ; Begin with escape.
 
 NOTCR:
     CMP     #$08           ; Backspace key?
@@ -210,46 +172,3 @@ PRHEX:
 ECHO:
     STA     ACIA_DATA      ; Output character.
     RTS                    ; Return.
-
-INPUT:
-    LDA     ACIA_STATUS
-    AND     #$08            ; Key ready?
-    BEQ INPUT_NOT_READY
-    LDA     ACIA_DATA       ; Load character
-    SEC
-    RTS
-INPUT_NOT_READY:
-    CLC
-    RTS
-
-
-NONE:
-    RTS
-
-IRQ_HANDLER:
-    RTI
-
-NMI_HANDLER:
-    RTI
-
-
-
-    .org $FF00
-VECTOR:
-    .word INPUT                   ; $FF00
-    .word ECHO                    ; $FF02
-    .word NONE                    ; $FF04
-    .word NONE                    ; $FF06
-
-    .org $FF80
-TABLE:
-    JMP IRQ_HANDLER         ; $FF80
-    JMP NMI_HANDLER         ; $FF83
-END:
-
-
-    .org $FFFA
-
-    word   NMI_vec          ; NMI vector
-    word   RESET            ; RESET vector
-    word   IRQ_vec          ; IRQ vector

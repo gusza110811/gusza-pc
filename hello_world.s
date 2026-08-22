@@ -1,4 +1,4 @@
-    org $A000
+    org $8200
 
 reset = $f000
 vec_echo = $ff02
@@ -20,3 +20,6 @@ echo:
 
 hello:
     byte $0D, $0A, "Hello, World!", $0D, $0A, $00
+
+    org $83fe
+    byte $55, $aa ; boot signature

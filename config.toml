@@ -4,6 +4,7 @@ static = true # always set CWD to the directory of this config
 [options]
 ROM = "rom.bin"
 CLOCK = "1M"
+NVRAM = "nvram0.img"
 
 [[region]]
 type = "rom"
@@ -13,14 +14,6 @@ match_mask = 0xC000
 address_mask = 0x3FFF
 
 [[region]]
-type = "ram"
-size = 0x0100
-match = 0x8000
-match_mask = 0xF000
-address_mask = 0x00FF
-name = "page_table"
-
-[[region]]
 type = "acia"
 match = 0x9000
 match_mask = 0xF000
@@ -28,16 +21,37 @@ address_mask = 0x0003
 
 [[region]]
 type = "ram"
-nv = true
-file = "nvram0.img"
-size = 0x1000
-match = 0xA000
-match_mask = 0xF000
-address_mask = 0x1FFF
+size = 0x2
+match = 0x8100
+match_mask = 0xFF00
+address_mask = 0x0001
+name = "nvram_sector"
 
 [[region]]
 type = "ram"
-size = 0x8000
+nv = true
+file = "$NVRAM"
+size = 0x1000000
+match = 0x8200
+match_mask = 0xFE00
+address_mask = 0x01FF
+
+banked = true
+window_id_length = 0 # 0 bits, no window id
+bank_id_length = 2 # bytes
+control_area = "nvram_sector"
+
+[[region]]
+type = "ram"
+size = 0x0100
+match = 0x8000
+match_mask = 0xFF00
+address_mask = 0x00FF
+name = "page_table"
+
+[[region]]
+type = "ram"
+size = 0x1000000
 match = 0x0000
 match_mask = 0x8000
 address_mask = 0x7FFF
