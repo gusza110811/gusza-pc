@@ -1,16 +1,16 @@
     .org $c000
 
-basic_init:
-    ldy #end-vector
-copy:
-    lda vector-1,y
-    sta VEC_IN-1,y
-    dey
-    bne copy
+; basic_init:
+;     ldy #end-vector
+; copy:
+;     lda vector-1,y
+;     sta VEC_IN-1,y
+;     dey
+;     bne copy
 
-    .include "basic.s"
+    ;.include "basic.s"
 
-IRQ_vec = VEC_SV+(end-vector)
+;IRQ_vec = VEC_SV+(end-vector)
 
     .org $f000
 
@@ -25,6 +25,7 @@ return:
 reset:
     lda     #$0b           ; no parity, no echo, no interrupts.
     sta     acia_cmd
+    lda #$00
     ldx #$00
 
 bank_init_loop:     ; initialize 
@@ -41,7 +42,23 @@ boot:
     asl
     cmp $83ff
     bne escape         ; boot signature not found, go to monitor.
-    jmp $8200          ; boot signature found, jump to user program.
+
+    ldx #$00           ; boot signature found, load bootsector
+    ldy #$00
+copy_loop1:
+    lda $8200,x
+    sta $4000,y
+    inx
+    iny
+    bne copy_loop1
+copy_loop2:
+    lda $8300,x
+    sta $4100,y
+    inx
+    iny
+    bne copy_loop2
+
+    jmp $4000       ; jump
 
     .include "wozmon.s"
 

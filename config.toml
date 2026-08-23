@@ -5,6 +5,7 @@ static = true # always set CWD to the directory of this config
 ROM = "rom.bin"
 CLOCK = "1M"
 NVRAM = "nvram0.img"
+NVRAM_SIZE = "0x1000000"
 
 [[region]]
 type = "rom"
@@ -31,13 +32,14 @@ name = "nvram_sector"
 type = "ram"
 nv = true
 file = "$NVRAM"
-size = 0x1000000
+size = "$NVRAM_SIZE"
 match = 0x8200
 match_mask = 0xFE00
 address_mask = 0x01FF
 
 banked = true
-window_id_length = 0 # 0 bits, no window id
+window_id_unused = 7
+window_id_length = 7 # no window id
 bank_id_length = 2 # bytes
 control_area = "nvram_sector"
 

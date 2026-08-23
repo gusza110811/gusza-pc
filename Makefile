@@ -1,20 +1,22 @@
-.PHONY: core demos all run clean
+.PHONY: all run debug clean os
 
-rom.bin: bios.s wozmon.s basic.s
-	vasm6502_oldstyle bios.s -o rom.bin -Fbin -wdc02 -dotdir
+all: rom.bin os
 
-hello_world.woz: hello_world.s
-	vasm6502_oldstyle hello_world.s -o hello_world.hex -Fihex -wdc02 -dotdir
-	hex2woz hello_world.hex
+rom.bin: bios/bios.s bios/wozmon.s bios/basic.s
+	vasm6502_oldstyle bios/bios.s -o rom.bin -Fbin -wdc02 -dotdir
 
-core: rom.bin
+os:
+	$(MAKE) -C os
 
-demos: hello_world.woz
-
-all: core demos
-
-run: core
+run_no_os: rom.bin
 	toml-6502
 
+run: rom.bin os
+	toml-6502 config.toml NVRAM=os/os.img NVRAM_SIZE=17408
+
+debug: rom.bin os
+	toml-6502 -m config.toml NVRAM=os/os.img NVRAM_SIZE=17408
+
 clean:
-	rm *.bin *.woz *.hex *.img
+	rm *.bin
+	$(MAKE) -C os clean
