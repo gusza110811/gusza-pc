@@ -7713,9 +7713,9 @@ V_INPT
 V_OUTP
 	JMP	(VEC_OUT)		; send byte to output device
 V_LOAD
-	JMP	(VEC_LD)		; load BASIC program
+	RTS		; load disabled
 V_SAVE
-	JMP	(VEC_SV)		; save BASIC program
+	RTS		; save disabled
 
 ; The rest are tables messages and code for RAM
 
