@@ -36,6 +36,7 @@ bank_init_loop:     ; initialize
     bne bank_init_loop
 
 boot:
+    stz $8100
     lda #$55
     cmp $83fe
     bne escape         ; boot signature not found, go to monitor.
@@ -77,10 +78,13 @@ input_not_ready:
     rts
 
 read_sector:
-    sta $8100
+    stx $8100
+    sty $8101
     rts
 
 write_sector:
+    stx $8100
+    sty $8101
     rts
 
 
@@ -88,7 +92,7 @@ none:
     rts
 
 irq_handler:
-    rti
+    
 
 nmi_handler:
     jmp escape

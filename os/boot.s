@@ -8,13 +8,29 @@ warg1 = warg0+2
 kernelID = $20
 
 main:
+    stz kernelID
+
     lda #<boot_msg
     sta warg0
     lda #>boot_msg
     sta warg0+1
     jsr string_out  ; print splash
 
-    lda #1
+    ; map page 7F, 7E and 7D to FFFF, FFFE and FFFD
+    lda #$FF
+    sta $7D*2+$8001
+    sta $7E*2+$8001
+    sta $7F*2+$8001
+
+    lda #$FD
+    sta $7D*2+$8000
+    ina
+    sta $7E*2+$8000
+    ina
+    sta $7F*2+$8000
+
+    ldy #0
+    ldx #1
     jsr disk_read   ; read sector 1 (file table)
 
 find_kernel:
@@ -45,8 +61,9 @@ find_loop:
 
 found:
     clc
-    lda kernelID
-    adc #2
+    ldx kernelID
+    inx
+    inx
     jsr disk_read
     sta dbg
     ldx #0

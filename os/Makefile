@@ -14,4 +14,4 @@ os.img: boot.bin kernel.bin
 	badfs os.img import kernel.bin KERNEL
 
 clean:
-	rm *.img *.bin
+	rm -f *.img *.bin

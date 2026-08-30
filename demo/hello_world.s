@@ -1,25 +1,24 @@
-    org $4000
+    org $0300
 
-reset = $f000
-vec_echo = $ff02
+printidx = $10
+
+vec_print = $7ff0
+vec_reset = $7ffe
 
 main:
-    ldx #$00
-
-loop:
-    lda hello,x
-    jsr echo
-    inx
-    cmp #0
-    bne loop
+    lda #<hello
+    sta printidx
+    lda #>hello
+    sta printidx+1
+    jsr put_str
 
     jmp reset
 
-echo:
-    jmp (vec_echo)
+put_str:
+    jmp (vec_print)
+
+reset:
+    jmp (vec_reset)
 
 hello:
     byte $0D, $0A, "Hello, World!", $0D, $0A, $00
-
-    org $41fe
-    byte $55, $aa ; boot signature
