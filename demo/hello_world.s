@@ -3,7 +3,7 @@
 printidx = $10
 
 vec_print = $7ff0
-vec_reset = $7ffe
+reset = $7fd0
 
 main:
     lda #<hello
@@ -16,9 +16,6 @@ main:
 
 put_str:
     jmp (vec_print)
-
-reset:
-    jmp (vec_reset)
 
 hello:
     byte $0D, $0A, "Hello, World!", $0D, $0A, $00

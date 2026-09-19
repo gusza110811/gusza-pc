@@ -20,6 +20,10 @@ entry:
     sta warg0+1
     jsr string_out
     jsr list_file
+    lda #$0d
+    jsr char_out
+    lda #$0a
+    jsr char_out
 
 main:
 
@@ -53,7 +57,7 @@ copy_loop2:
     iny
     bne copy_loop2
 
-    jmp run_program
+    jmp program_target
 
 
 not_found:
@@ -106,24 +110,9 @@ not_found_msg:
     .byte "File not found", $0d, $0a, $00
 
 
+    ; service area
 
-    .org $7F00 ; service area / resident area
-
-run_program:
-
-    ; map page 7E and 7D to 007E and 007D before running user program
-    lda #$00
-    sta $7D*2+$8001
-    sta $7E*2+$8001
-
-    lda #$7D
-    sta $7D*2+$8000
-    ina
-    sta $7E*2+$8000
-
-    jmp program_target
-
-; start <- $10.11
+; $10.11 <- string start
 string_out:
     lda warg0+1
     pha
@@ -146,7 +135,7 @@ out_done:
     sta warg0+1
     rts
 
-; start <- $10.11
+; $10.11 <- string start
 string_in:
     lda warg0+1
     pha
@@ -192,6 +181,8 @@ disk_read:
 disk_write:
     jmp ($FF06)
 
+; $10.11 <- file name
+; Carry -> not found
 find_file:
     stz file
 
@@ -215,9 +206,9 @@ find_loop:
     jsr strcmp
 
     pla
-    lda warg1
+    sta warg1
     pla
-    lda warg1+1
+    sta warg1+1
     pla
     sta warg0
     pla
@@ -233,9 +224,11 @@ find_loop:
     adc #0
     sta warg1+1
 
+    clc
     inc file
     lda #32
     cmp file
+    sec
     bne find_loop
     sec
 
@@ -252,54 +245,99 @@ strcmp:
 strcmp_loop:
     lda (warg0)
     cmp (warg1)
-    bne not_equal
+    bne strcmp_not_equal
     cmp #0
-    beq equal
+    beq strcmp_equal
 
     inc warg0
     bne strcmp_no_carry
     inc warg0+1
 
-    strcmp_no_carry:
+strcmp_no_carry:
     inc warg1
     bne strcmp_loop
     inc warg1+1
 
     bra strcmp_loop
 
-not_equal:
+strcmp_not_equal:
     sec
     rts
-equal:
+strcmp_equal:
     clc
     rts
 
+; string 0 <- $10.11
+; string 1 <- $12.13
+strcpy:
+    lda (warg1)
+    sta (warg0)
+    cmp #0
+    beq strcpy_done
+
+    inc warg0
+    bne strcpy_no_carry
+    inc warg0+1
+strcpy_no_carry:
+    inc warg1
+    bne strcpy
+    inc warg1+1
+    bra strcpy
+strcpy_done:
+    rts
+
+; A <- file id
 file_read:
     clc
     adc #2
     tax
     jmp disk_read
 
+; A <- file id
 file_write:
     clc
     adc #2
     tax
     jmp disk_write
 
+; $10.11 <- new file name
+file_create:
+
+    jsr find_file
+    bcc file_exist
+
+    ; find free file slot
+    ldx #$01
+    jsr disk_read
+
+    ldx #$00
+file_create_find_slot:
+    lda $8200, x
+    cmp #$00
+    beq found_slot
+    inx
+    cpx #$20
+    bne file_create_find_slot
+
+no_slot:
+    sec
+    rts
+
+found_slot:
+    stx warg1
+    lda #$80
+    sta $warg1+1
+    jsr strcpy
+
+    rts
+
+file_exist:
+    rts
+
+
+    .org $7FE0
 reset:
-    inc dbg
-
-    ; map page 7E and 7D to FFFE and FFFD before dropping back to shell
-    lda #$FF
-    sta $7D*2+$8001
-    sta $7E*2+$8001
-
-    lda #$FD
-    sta $7D*2+$8000
-    ina
-    sta $7E*2+$8000
     jmp main
-
 
     .org $7FF0
 vectors:
@@ -310,4 +348,4 @@ vectors:
     .word file_write    ; 7FF8
     .word file_read     ; 7FFA
     .word find_file     ; 7FFC
-    .word reset         ; 7FFE
+    .word file_create   ; 7FFE
