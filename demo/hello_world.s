@@ -3,7 +3,7 @@
 printidx = $10
 
 vec_print = $7ff0
-reset = $7fd0
+reset = $7fe0
 
 main:
     lda #<hello

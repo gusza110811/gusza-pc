@@ -35,9 +35,8 @@ main:
 
 find_kernel:
 
+    stz warg1
     lda #$82
-    sta warg1
-    lda #$00
     sta warg1+1
 
 find_loop:
@@ -49,15 +48,19 @@ find_loop:
     jsr strcmp
     bcc found
 
-    inc warg1
-    bne find_loop
-    inc warg1+1
-    bra find_loop
-
     inc kernelID
     lda #32
     cmp kernelID
     beq not_found
+
+    clc
+    lda warg1
+    adc #$10
+    sta warg1
+    lda warg1+1
+    adc #0
+    sta warg1+1
+    bra find_loop
 
 found:
     clc

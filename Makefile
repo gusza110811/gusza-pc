@@ -1,6 +1,7 @@
 .PHONY: all run debug clean os demo
 
-demos := hello_world
+demos := hello_world \
+	newf
 
 all: rom.bin osall.img
 
@@ -19,7 +20,7 @@ os:
 	$(MAKE) -C os
 
 demo:
-	$(MAKE) -C demo DEMOS=$(demos)
+	$(MAKE) -C demo DEMOS="$(demos)"
 
 run_no_os: rom.bin
 	toml-6502
@@ -33,4 +34,4 @@ debug: all
 clean:
 	rm -f *.bin *.img
 	$(MAKE) -C os clean
-	$(MAKE) -C demo clean DEMOS=$(demos)
+	$(MAKE) -C demo clean DEMOS="$(demos)"

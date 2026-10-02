@@ -151,6 +151,17 @@ string_in_loop:
     cmp #$0D
     beq in_done
 
+    cmp #$08
+    bne no_bksp
+    ldx warg0
+    bne dec_skip
+    dec warg0+1
+dec_skip:
+    dec warg0
+    bra string_in_loop
+
+no_bksp:
+
     sta (warg0)
     inc warg0
     bne string_in_loop
@@ -161,6 +172,11 @@ in_done:
     jsr char_out
     lda #$0A
     jsr char_out
+    ; null terminate the string
+    inc warg0
+    bne in_done2
+    inc warg0+1
+in_done2:
     lda #0
     sta (warg0)
     pla
@@ -310,13 +326,26 @@ file_create:
     ldx #$01
     jsr disk_read
 
-    ldx #$00
+    stz file
+    stz warg1
+    lda #$82
+    sta warg1+1
 file_create_find_slot:
-    lda $8200, x
+    lda (warg1)
     cmp #$00
     beq found_slot
-    inx
-    cpx #$20
+
+    clc
+    lda warg1
+    adc #$10
+    sta warg1
+    lda warg1+1
+    adc #0
+    sta warg1+1
+
+    inc file
+    lda #32
+    cmp file
     bne file_create_find_slot
 
 no_slot:
@@ -324,9 +353,21 @@ no_slot:
     rts
 
 found_slot:
-    stx warg1
-    lda #$80
-    sta $warg1+1
+    lda warg0+1
+    pha
+    lda warg0
+    pha
+
+    lda warg1+1
+    sta warg0+1
+    lda warg1
+    sta warg0
+
+    pla
+    sta warg1
+    pla
+    sta warg1+1
+
     jsr strcpy
 
     rts
