@@ -1,7 +1,8 @@
 .PHONY: all run debug clean os demo
 
 demos := hello_world \
-	newf
+	newf \
+	sh
 
 all: rom.bin osall.img
 

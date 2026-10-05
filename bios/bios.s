@@ -87,6 +87,15 @@ write_sector:
     sty $8101
     rts
 
+read_sector_short:
+    stx $8100
+    stz $8101
+    rts
+
+write_sector_short:
+    stx $8100
+    stz $8101
+    rts
 
 none:
     rts
@@ -104,6 +113,8 @@ vector:
     .word echo  ; $ff02
     .word read_sector  ; $ff04
     .word write_sector ; $ff06
+    .word read_sector_short ; $ff08
+    .word write_sector_short ; $ff0a
 end:
 
 

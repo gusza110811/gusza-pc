@@ -1,7 +1,5 @@
     .org $4000
 
-dbg = $ff
-
 warg0 = $10
 warg1 = warg0+2
 
@@ -53,7 +51,6 @@ find_loop:
     cmp kernelID
     beq not_found
 
-    clc
     lda warg1
     adc #$10
     sta warg1
@@ -68,7 +65,6 @@ found:
     inx
     inx
     jsr disk_read
-    sta dbg
     ldx #0
     ldy #0
 

@@ -1,17 +1,14 @@
+; constants
 file = $0F
-
 warg0 = $10
 warg1 = warg0+2
-
 tmp0 = $20
 
-dbg = $ff
-
-disk_window = $8200
-input_buf = $7D00
+disk_window    = $8200
+input_buf      = $7D00
 program_target = $0300
 
-    .org $7E00 ; kernel area
+    .org $7E00
 
 entry:
     lda #<boot_msg
@@ -19,14 +16,15 @@ entry:
     lda #>boot_msg
     sta warg0+1
     jsr string_out
+
     jsr list_file
+
     lda #$0d
     jsr char_out
     lda #$0a
     jsr char_out
 
 main:
-
     lda #$3E
     jsr char_out
 
@@ -34,31 +32,24 @@ main:
     sta warg0
     lda #>input_buf
     sta warg0+1
-
     jsr string_in
+
+    ; string_in preserves warg0, so warg0 still points to input_buf
     jsr find_file
     bcs not_found
 
     jsr file_read
 
     ldx #$00
-    ldy #$00
-
-copy_loop1:
+copy_loop:
     lda disk_window,x
-    sta program_target,y
-    inx
-    iny
-    bne copy_loop1
-copy_loop2:
+    sta program_target,x
     lda disk_window+$100,x
-    sta program_target+$100,y
+    sta program_target+$100,x
     inx
-    iny
-    bne copy_loop2
+    bne copy_loop
 
     jmp program_target
-
 
 not_found:
     lda #<not_found_msg
@@ -68,6 +59,7 @@ not_found:
     jsr string_out
     bra main
 
+; list all 32 directory entries (some may be empty)
 list_file:
     ldx #$01
     jsr disk_read
@@ -80,14 +72,12 @@ list_file:
     stz tmp0
 
 list_loop:
-
     jsr string_out
 
     lda #$20
     jsr char_out
 
     clc
-
     lda warg0
     adc #$10
     sta warg0
@@ -98,7 +88,6 @@ list_loop:
     inc tmp0
     lda #$20
     cmp tmp0
-
     bne list_loop
 
     rts
@@ -109,8 +98,7 @@ boot_msg:
 not_found_msg:
     .byte "File not found", $0d, $0a, $00
 
-
-    ; service area
+; service area
 
 ; $10.11 <- string start
 string_out:
@@ -128,6 +116,7 @@ string_out_loop:
     bne string_out_loop
     inc warg0+1
     bra string_out_loop
+
 out_done:
     pla
     sta warg0
@@ -135,7 +124,7 @@ out_done:
     sta warg0+1
     rts
 
-; $10.11 <- string start
+; $10.11 <- buffer start
 string_in:
     lda warg0+1
     pha
@@ -145,7 +134,6 @@ string_in:
 string_in_loop:
     jsr char_in
     bcc string_in_loop
-
     jsr char_out
 
     cmp #$0D
@@ -153,6 +141,7 @@ string_in_loop:
 
     cmp #$08
     bne no_bksp
+
     ldx warg0
     bne dec_skip
     dec warg0+1
@@ -161,7 +150,6 @@ dec_skip:
     bra string_in_loop
 
 no_bksp:
-
     sta (warg0)
     inc warg0
     bne string_in_loop
@@ -169,16 +157,11 @@ no_bksp:
     bra string_in_loop
 
 in_done:
-    jsr char_out
     lda #$0A
     jsr char_out
-    ; null terminate the string
-    inc warg0
-    bne in_done2
-    inc warg0+1
-in_done2:
-    lda #0
-    sta (warg0)
+    lda #$00
+    sta (warg0)      ; null terminate at current position
+
     pla
     sta warg0
     pla
@@ -187,21 +170,17 @@ in_done2:
 
 char_in:
     jmp ($FF00)
-
 char_out:
     jmp ($FF02)
-
 disk_read:
-    jmp ($FF04)
-
+    jmp ($FF08)
 disk_write:
-    jmp ($FF06)
+    jmp ($FF0A)
 
-; $10.11 <- file name
-; Carry -> not found
+; $10.11 <- file name. Returns A = file id, C=0 found, C=1 not found.
+; Uses `file` as index (0..31, or 32 if not found).
 find_file:
     stz file
-
     ldx #$01
     jsr disk_read
 
@@ -210,26 +189,7 @@ find_file:
     sta warg1+1
 
 find_loop:
-    lda warg0+1
-    pha
-    lda warg0
-    pha
-    lda warg1+1
-    pha
-    lda warg1
-    pha
-
     jsr strcmp
-
-    pla
-    sta warg1
-    pla
-    sta warg1+1
-    pla
-    sta warg0
-    pla
-    sta warg0+1
-
     bcc find_done
 
     clc
@@ -240,65 +200,51 @@ find_loop:
     adc #0
     sta warg1+1
 
-    clc
     inc file
     lda #32
     cmp file
-    sec
     bne find_loop
-    sec
 
+    sec
 find_done:
     lda file
     rts
 
-; string 0 <- $10.11
-; string 1 <- $12.13
-; string 0 end -> $10.11
-; string 1 end -> $12.13
+; Compare null-terminated strings at $10.11 and $12.13.
+; Bounded to 16 bytes. C=0 equal, C=1 not equal. Does not modify warg0/warg1.
 strcmp:
-
+    ldy #$00
 strcmp_loop:
-    lda (warg0)
-    cmp (warg1)
-    bne strcmp_not_equal
-    cmp #0
-    beq strcmp_equal
-
-    inc warg0
-    bne strcmp_no_carry
-    inc warg0+1
-
-strcmp_no_carry:
-    inc warg1
+    lda (warg0),y
+    cmp (warg1),y
+    bne strcmp_ne
+    cmp #$00
+    beq strcmp_eq
+    iny
+    cpy #$10
     bne strcmp_loop
-    inc warg1+1
-
-    bra strcmp_loop
-
-strcmp_not_equal:
-    sec
-    rts
-strcmp_equal:
+strcmp_eq:
     clc
     rts
+strcmp_ne:
+    sec
+    rts
 
-; string 0 <- $10.11
-; string 1 <- $12.13
+; Copy null-terminated string from $12.13 to $10.11.
+; Bounded to 15 chars + null. Does not modify warg0/warg1.
 strcpy:
-    lda (warg1)
-    sta (warg0)
-    cmp #0
+    ldy #$00
+strcpy_loop:
+    cpy #$0F
+    beq strcpy_term
+    lda (warg1),y
+    sta (warg0),y
     beq strcpy_done
-
-    inc warg0
-    bne strcpy_no_carry
-    inc warg0+1
-strcpy_no_carry:
-    inc warg1
-    bne strcpy
-    inc warg1+1
-    bra strcpy
+    iny
+    bra strcpy_loop
+strcpy_term:
+    lda #$00
+    sta (warg0),y
 strcpy_done:
     rts
 
@@ -316,13 +262,13 @@ file_write:
     tax
     jmp disk_write
 
-; $10.11 <- new file name
+; $10.11 <- new file name. Returns C=0 success (exists or created), C=1 no slot.
+; Uses `file` as slot index.
 file_create:
-
     jsr find_file
     bcc file_exist
 
-    ; find free file slot
+    ; find free slot
     ldx #$01
     jsr disk_read
 
@@ -330,6 +276,7 @@ file_create:
     stz warg1
     lda #$82
     sta warg1+1
+
 file_create_find_slot:
     lda (warg1)
     cmp #$00
@@ -348,45 +295,39 @@ file_create_find_slot:
     cmp file
     bne file_create_find_slot
 
-no_slot:
     sec
     rts
 
 found_slot:
-    lda warg0+1
-    pha
+    ; swap warg0 and warg1 so strcpy copies filename -> slot
     lda warg0
-    pha
-
-    lda warg1+1
-    sta warg0+1
-    lda warg1
-    sta warg0
-
-    pla
+    ldx warg1
+    stx warg0
     sta warg1
-    pla
+    lda warg0+1
+    ldx warg1+1
+    stx warg0+1
     sta warg1+1
 
     jsr strcpy
-
+    clc
     rts
 
 file_exist:
+    clc
     rts
 
-
     .org $7FE0
-reset:
+return:
     jmp main
 
     .org $7FF0
 vectors:
-    .word string_out    ; 7FF0
-    .word string_in     ; 7FF2
-    .word char_out      ; 7FF4
-    .word char_in       ; 7FF6
-    .word file_write    ; 7FF8
-    .word file_read     ; 7FFA
-    .word find_file     ; 7FFC
-    .word file_create   ; 7FFE
+    .word string_out
+    .word string_in
+    .word char_out
+    .word char_in
+    .word file_write
+    .word file_read
+    .word find_file
+    .word file_create
