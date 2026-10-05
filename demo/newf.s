@@ -3,35 +3,21 @@
 warg0 = $10
 warg1 = warg0+2
 
-vec_putstr = $7ff0
-vec_getstr = $7ff2
-vec_charout = $7ff4
+command_tail = $0200
+
 vec_filecreate = $7ffe
 
-reset = $7fe0
-
-buffer = $400
+return = $7fe0
 
 entry:
-    lda #$4E
-    jsr char_out
-
-    lda #<buffer
+    lda #<command_tail
     sta warg0
-    lda #>buffer
+    lda #>command_tail
     sta warg0+1
-    jsr get_str
 
     jsr file_create
 
-    jmp reset
+    jmp return
 
-
-put_str:
-    jmp (vec_putstr)
-get_str:
-    jmp (vec_getstr)
-char_out:
-    jmp (vec_charout)
 file_create:
     jmp (vec_filecreate)

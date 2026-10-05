@@ -4,8 +4,12 @@ warg0 = $10
 warg1 = warg0+2
 tmp0 = $20
 
+dbg = $FF
+
 disk_window    = $8200
 input_buf      = $7D00
+
+command_tail   = $0200
 program_target = $0300
 
     .org $7E00
@@ -34,7 +38,33 @@ main:
     sta warg0+1
     jsr string_in
 
-    ; string_in preserves warg0, so warg0 still points to input_buf
+    ; find first space
+    ldy #$00
+find_space_loop:
+    lda input_buf,y
+    beq no_space
+    cmp #$20
+    beq found_space
+    iny
+    bra find_space_loop
+found_space:
+    lda #$00
+    sta input_buf,y
+    ldx #$00
+    iny
+copy_tail:
+    lda input_buf,y
+    sta command_tail,x
+    beq copy_tail_done
+    inx
+    iny
+    bra copy_tail
+
+no_space:
+    stz command_tail
+
+copy_tail_done:
+
     jsr find_file
     bcs not_found
 
